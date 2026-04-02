@@ -109,6 +109,11 @@ fn get_image_list(source: &PathBuf) -> Result<Vec<String>, String> {
 }
 
 #[command]
+fn quit(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
+#[command]
 fn get_current_source(state: tauri::State<AppState>) -> String {
     state.current_source.lock().unwrap().to_string_lossy().to_string()
 }
@@ -145,7 +150,7 @@ fn load_image(
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_default();
-    let title = format!("{} — {} / {}", source_name, index + 1, total);
+    let title = format!("{} — {} / {}  v{}", source_name, index + 1, total, env!("CARGO_PKG_VERSION"));
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.set_title(&title);
     }
@@ -214,6 +219,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            quit,
             get_current_source,
             get_image_count,
             load_image,

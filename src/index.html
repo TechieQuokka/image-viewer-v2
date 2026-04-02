@@ -58,21 +58,40 @@
       let totalCount = 0;
       let zoom = 1.0;
       let sortMode = "modified-desc";
+      let fitMode = "none"; // "none" | "width" | "height"
 
       const img = document.getElementById("img");
       const info = document.getElementById("info");
 
-      function updateInfo() {
-        const sortLabel = sortMode === "name-asc" ? "name" : "modified";
-        info.textContent = `${currentIndex + 1} / ${totalCount}  ${sortLabel}`;
-      }
-
-      async function loadImage() {
+      function applyFit() {
+        if (fitMode === "width") {
+          img.style.width = "100vw";
+          img.style.height = "auto";
+        } else if (fitMode === "height") {
+          img.style.width = "auto";
+          img.style.height = "100vh";
+        } else {
+          img.style.width = "auto";
+          img.style.height = "auto";
+        }
         zoom = 1.0;
         img.style.transform = "scale(1)";
         img.style.transformOrigin = "0 0";
+      }
+
+      function updateInfo() {
+        const sortLabel = sortMode === "name-asc" ? "name" : "modified";
+        const fitLabel = fitMode === "width" ? "  fit-w" : fitMode === "height" ? "  fit-h" : "";
+        info.textContent = `${currentIndex + 1} / ${totalCount}  ${sortLabel}${fitLabel}`;
+      }
+
+      async function loadImage() {
         const dataUrl = await invoke("load_image", { index: currentIndex });
-        img.onload = () => { document.documentElement.scrollTop = 0; document.body.scrollTop = 0; };
+        img.onload = () => {
+          applyFit();
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        };
         img.src = dataUrl;
         updateInfo();
       }
@@ -130,10 +149,23 @@
             currentIndex = totalCount - 1;
             await loadImage();
           }
+        } else if (e.key === "w") {
+          fitMode = fitMode === "width" ? "none" : "width";
+          applyFit();
+          updateInfo();
+        } else if (e.key === "h") {
+          fitMode = fitMode === "height" ? "none" : "height";
+          applyFit();
+          updateInfo();
+        } else if (e.key === "o") {
+          fitMode = "none";
+          applyFit();
+          updateInfo();
         } else if (e.key === "]") {
           try {
             await invoke("move_archive", { direction: 1 });
             currentIndex = 0;
+            fitMode = "none";
             totalCount = await invoke("get_image_count");
             await loadImage();
           } catch (_) {}
@@ -141,6 +173,7 @@
           try {
             await invoke("move_archive", { direction: -1 });
             currentIndex = 0;
+            fitMode = "none";
             totalCount = await invoke("get_image_count");
             await loadImage();
           } catch (_) {}
@@ -154,6 +187,9 @@
         } else if (e.key === "F9") {
           sortMode = await invoke("toggle_sort");
           updateInfo();
+        } else if (e.key === "q" && e.ctrlKey) {
+          e.preventDefault();
+          await invoke("quit");
         }
       });
 
