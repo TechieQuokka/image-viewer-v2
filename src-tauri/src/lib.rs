@@ -104,6 +104,7 @@ fn get_image_list(source: &PathBuf) -> Result<Vec<String>, String> {
                 }
             }
         }
+        names.sort();
         Ok(names)
     }
 }
